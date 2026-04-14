@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Navigation from "@/components/nav";
 import PDFViewerModal from "@/components/viewDocument";
 import UploadModal from "@/components/uploadModal";
+import DropFile from "./dropfile";
 
 interface Document {
   id: string;
@@ -38,6 +39,8 @@ export default function DocumentsPage() {
       setLoading(true);
       const res = await fetch("/api/documents");
       const data = await res.json();
+      console.log("Fetched documents:", data);
+
       if (data.error) {
         setError(data.error);
       } else {
@@ -102,14 +105,16 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0F172A]">
+    <div className="min-h-screen bg-[#0E0E1A]">
       <Navigation />
       <main className="max-w-7xl mx-auto p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-[#F8FAFC]">Documents</h1>
+          <h1 className="md:text-[26px] text-[20px] font-medium text-[#F8FAFC]">
+            Documents
+          </h1>
           <button
             onClick={() => setShowUploadModal(true)}
-            className="px-4 py-2 bg-[#4F46E5] text-white rounded-lg hover:bg-[#7C3AED] font-medium"
+            className="md:px-8 py-3 px-4  rounded-lg bg-[#13131F] text-sm border border-gray-700 text-white font-medium"
           >
             Upload Document
           </button>
@@ -138,124 +143,126 @@ export default function DocumentsPage() {
             </button>
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-                <thead className="">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
-                      File Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
-                      Size
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
-                      Chunks
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
-                      Upload Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                  {documents.map((doc) => (
-                    <tr
-                      key={doc.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800 bg-[#1E293B] hover:bg-[#263548]"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {doc.file_name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-[#7C3AED] text-white">
-                          {doc.file_type || "unknown"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {formatFileSize(doc.file_size)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {doc.total_chunks}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(doc.upload_date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex gap-3 items-center">
-                          {doc.file_name.toLowerCase().endsWith(".pdf") ? (
-                            <button
-                              onClick={() => {
-                                const pdfUrl = doc.file_url
-                                  ? `${doc.file_url}?view=true`
-                                  : `/api/documents?id=${doc.id}&file=true&view=true`;
-                                setSelectedPDF({
-                                  url: pdfUrl,
-                                  name: doc.file_name,
-                                  id: doc.id,
-                                });
-                                setShowPDFModal(true);
-                              }}
-                              className="text-[#4F46E5] hover:text-blue-900  dark:hover:text-blue-300"
-                            >
-                              Preview
-                            </button>
-                          ) : (
-                            <>
+          <div>
+            <div className="bg-[#13131F] border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden hover:bg-violet-950/10 transition-colors">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800 hover:bg-violet-950/10 transition-colors">
+                  <thead className="">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
+                        File Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
+                        Size
+                      </th>
+
+                      <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
+                        Upload Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium  text-[#94A3B8] dark:text-gray-400 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                    {documents.map((doc) => (
+                      <tr
+                        key={doc.id}
+                        className="hover:bg-violet-950/10 transition-colors bg-[#13131F]"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {doc.file_name}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-transparent border border-violet-800 text-[#A78BFA]">
+                            {doc.file_type || "unknown"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {formatFileSize(doc.file_size)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {formatDate(doc.upload_date)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex gap-3 items-center">
+                            {doc.file_name.toLowerCase().endsWith(".pdf") ? (
                               <button
                                 onClick={() => {
+                                  const pdfUrl = doc.file_url
+                                    ? `${doc.file_url}?view=true`
+                                    : `/api/documents?id=${doc.id}&file=true&view=true`;
                                   setSelectedPDF({
-                                    url:
-                                      doc.file_url ||
-                                      `/api/documents?id=${doc.id}&file=true`,
+                                    url: pdfUrl,
                                     name: doc.file_name,
                                     id: doc.id,
-                                    isPDF: false,
                                   });
                                   setShowPDFModal(true);
                                 }}
-                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                className="flex-1 px-4 py-3 rounded-lg bg-[#13131F]  border border-gray-700 text-white"
                               >
-                                View
+                                Preview
                               </button>
-                              {(doc.file_url || doc.file_path) && (
-                                <a
-                                  href={
-                                    doc.file_url ||
-                                    `/api/documents?id=${doc.id}&file=true`
-                                  }
-                                  download={doc.file_name}
-                                  className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedPDF({
+                                      url:
+                                        doc.file_url ||
+                                        `/api/documents?id=${doc.id}&file=true`,
+                                      name: doc.file_name,
+                                      id: doc.id,
+                                      isPDF: false,
+                                    });
+                                    setShowPDFModal(true);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                 >
-                                  Download
-                                </a>
-                              )}
-                            </>
-                          )}
-                          <button
-                            onClick={() => handleDelete(doc.id, doc.file_name)}
-                            disabled={deletingId === doc.id}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {deletingId === doc.id ? "Deleting..." : "Delete"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                                  View
+                                </button>
+                                {(doc.file_url || doc.file_path) && (
+                                  <a
+                                    href={
+                                      doc.file_url ||
+                                      `/api/documents?id=${doc.id}&file=true`
+                                    }
+                                    download={doc.file_name}
+                                    className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Download
+                                  </a>
+                                )}
+                              </>
+                            )}
+                            <button
+                              onClick={() =>
+                                handleDelete(doc.id, doc.file_name)
+                              }
+                              disabled={deletingId === doc.id}
+                              className="flex-1 px-4 py-3 rounded-lg bg-[#13131F]  border border-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {deletingId === doc.id ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
+            <DropFile onUploadSuccess={fetchDocuments} />
           </div>
+
+          // Upload Box
         )}
 
         {selectedPDF && (

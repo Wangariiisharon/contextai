@@ -104,9 +104,9 @@ export default function PDFViewerModal({
         className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col border-b border-gray-200 dark:border-gray-800">
+        <div className="flex flex-col border-b border-gray-200  bg-[#13131F] ">
           <div className="flex items-center justify-between p-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 truncate flex-1 mr-4">
+            <h2 className="text-xl font-semibold text-gray-300  truncate flex-1 mr-4">
               {fileName}
             </h2>
             <div className="flex items-center gap-2">
@@ -140,8 +140,8 @@ export default function PDFViewerModal({
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                     activeTab === tab
-                      ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      ? "text-[#A78BFA] border-b-2 border-violet-900 focus:outline-none  focus:border-transparent bg-[#0E0E1A]"
+                      : "text-gray-500  bg-[#13131F]  "
                   }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
