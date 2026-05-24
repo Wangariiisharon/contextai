@@ -4,22 +4,27 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utills/supabase/client";
 
-export default function LoginPage() {
+export default function SignUp() {
   const router = useRouter();
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setErrorMessage(null);
+    setInfoMessage(null);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
 
     setLoading(false);
@@ -31,9 +36,12 @@ export default function LoginPage() {
 
     if (data?.session || data?.user) {
       router.push("/dashboard");
-    } else {
-      setErrorMessage("Login succeeded, but no session was established.");
+      return;
     }
+
+    setInfoMessage(
+      "Check your email for a confirmation link to complete sign up.",
+    );
   };
 
   const handleGoogleSignIn = async () => {
@@ -62,9 +70,9 @@ export default function LoginPage() {
 
   return (
     <div className="max-w-md mx-auto mt-20 p-8">
-      <h1 className="text-2xl font-bold mb-6">Welcome</h1>
+      <h1 className="text-2xl font-bold mb-6">Create Account</h1>
 
-      <form onSubmit={handleSignIn} className="space-y-4 mb-6">
+      <form onSubmit={handleSignUp} className="space-y-4 mb-6">
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -87,22 +95,19 @@ export default function LoginPage() {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="flex-1 bg-black text-white rounded py-2"
+            className="flex-1 border rounded py-2"
             disabled={loading}
           >
-            Sign In
-          </button>
-          <a
-            href="/signUp"
-            className="flex-1 border rounded py-2 text-center inline-flex items-center justify-center"
-          >
             Sign Up
-          </a>
+          </button>
         </div>
       </form>
 
       {errorMessage && (
         <div className="mb-4 text-red-500 text-sm">{errorMessage}</div>
+      )}
+      {infoMessage && (
+        <div className="mb-4 text-slate-600 text-sm">{infoMessage}</div>
       )}
 
       <div className="relative my-6">
@@ -125,9 +130,9 @@ export default function LoginPage() {
       </button>
 
       <p className="text-sm text-gray-500 mt-4">
-        Don't have an account?{" "}
-        <a href="/signUp" className="text-blue-500 hover:underline">
-          Sign up
+        Already have an account?{" "}
+        <a href="/login" className="text-blue-500 hover:underline">
+          Sign in
         </a>
       </p>
     </div>

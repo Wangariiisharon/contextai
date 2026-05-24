@@ -1,10 +1,11 @@
+import { createClient as createServerClient } from "@/utills/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
 );
 
 // Native Gemini SDK — supports outputDimensionality natively
@@ -28,6 +29,20 @@ const chatModel = genAI.getGenerativeModel({
 
 export async function POST(req: Request) {
   try {
+    // Get authenticated user from session cookies
+    const serverSupabase = await createServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await serverSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized: User not authenticated" },
+        { status: 401 },
+      );
+    }
+
     const { query } = await req.json();
 
     // Generate 768-dimensional embedding for the user's query
@@ -41,12 +56,15 @@ export async function POST(req: Request) {
     const embeddingVector = embResult.embedding.values;
 
     // Find similar documents using vector similarity search
-    // match_documents returns the 5 most similar chunks
-    const { data: results, error } = await supabase.rpc("match_documents", {
-      query_embedding: JSON.stringify(embeddingVector),
-      match_threshold: 0.0, // Accept any similarity (increase for stricter matching)
-      match_count: 5, // Return top 5 most similar chunks
-    });
+    // match_documents filters by auth.uid() automatically via SECURITY INVOKER
+    const { data: results, error } = await serverSupabase.rpc(
+      "match_documents",
+      {
+        query_embedding: JSON.stringify(embeddingVector),
+        match_threshold: 0.0, // Accept any similarity (increase for stricter matching)
+        match_count: 5, // Return top 5 most similar chunks
+      },
+    );
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -59,7 +77,7 @@ export async function POST(req: Request) {
     const chat = chatModel.startChat();
 
     const chatResponse = await chat.sendMessage(
-      `Context: ${context}\n\nQuestion: ${query}`
+      `Context: ${context}\n\nQuestion: ${query}`,
     );
 
     return NextResponse.json({

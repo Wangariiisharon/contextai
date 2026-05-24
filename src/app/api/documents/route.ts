@@ -1,3 +1,4 @@
+import { createClient as createServerClient } from "@/utills/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
@@ -9,6 +10,20 @@ const supabaseStorage = createClient(url, serviceKey);
 
 export async function GET(req: Request) {
   try {
+    // Get authenticated user from session cookies
+    const serverSupabase = await createServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await serverSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized: User not authenticated" },
+        { status: 401 },
+      );
+    }
+
     const reqUrl = new URL(req.url);
     const id = reqUrl.searchParams.get("id");
     const file = reqUrl.searchParams.get("file") === "true";
@@ -16,16 +31,17 @@ export async function GET(req: Request) {
 
     // Handle file download/view
     if (id && file) {
-      const { data: documents } = await supabase
+      const { data: documents } = await serverSupabase
         .from("documents")
         .select("metadata")
         .eq("metadata->>document_id", id)
+        .eq("metadata->>user_id", user.id)
         .limit(1);
 
       if (!documents || documents.length === 0) {
         return NextResponse.json(
           { error: "Document not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -43,7 +59,7 @@ export async function GET(req: Request) {
           {
             error: downloadError?.message || "File not stored",
           },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -70,16 +86,17 @@ export async function GET(req: Request) {
 
     // Get single document with text content
     if (id) {
-      const { data: chunks, error } = await supabase
+      const { data: chunks, error } = await serverSupabase
         .from("documents")
         .select("content, metadata")
         .eq("metadata->>document_id", id)
+        .eq("metadata->>user_id", user.id)
         .order("metadata->>chunk_index", { ascending: true });
 
       if (error || !chunks || chunks.length === 0) {
         return NextResponse.json(
           { error: "Document not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -97,17 +114,17 @@ export async function GET(req: Request) {
       });
     }
 
-    // List all documents
-    const { data: documents, error } = await supabase
+    // List all documents for the logged-in user
+    const { data: documents, error } = await serverSupabase
       .from("documents")
-      .select("metadata");
+      .select("metadata")
+      .eq("metadata->>user_id", user.id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     // Deduplicate documents by document_id
-    // Since each document is split into multiple chunks, we need to group them
     const map = new Map();
     documents?.forEach((doc: any) => {
       const m = doc.metadata;
@@ -133,22 +150,44 @@ export async function GET(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    // Get authenticated user from session cookies
+    const serverSupabase = await createServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await serverSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized: User not authenticated" },
+        { status: 401 },
+      );
+    }
+
     const id = new URL(req.url).searchParams.get("id");
     if (!id) {
       return NextResponse.json(
         { error: "Document ID required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Get file path from metadata
-    const { data: docs } = await supabase
+    // Get file path from metadata - ensure user owns the document
+    const { data: docs } = await serverSupabase
       .from("documents")
       .select("metadata")
       .eq("metadata->>document_id", id)
+      .eq("metadata->>user_id", user.id)
       .limit(1);
 
-    const filePath = docs?.[0]?.metadata?.file_path;
+    if (!docs || docs.length === 0) {
+      return NextResponse.json(
+        { error: "Document not found or unauthorized" },
+        { status: 404 },
+      );
+    }
+
+    const filePath = docs[0]?.metadata?.file_path;
 
     // Delete file from storage
     if (filePath) {
@@ -159,7 +198,8 @@ export async function DELETE(req: Request) {
     const { error } = await supabase
       .from("documents")
       .delete()
-      .eq("metadata->>document_id", id);
+      .eq("metadata->>document_id", id)
+      .eq("metadata->>user_id", user.id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

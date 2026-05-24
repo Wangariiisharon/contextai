@@ -48,7 +48,7 @@ export default function DocumentsPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to fetch documents"
+        err instanceof Error ? err.message : "Failed to fetch documents",
       );
     } finally {
       setLoading(false);
@@ -77,13 +77,13 @@ export default function DocumentsPage() {
     b < 1024
       ? `${b} B`
       : b < 1024 * 1024
-      ? `${(b / 1024).toFixed(2)} KB`
-      : `${(b / (1024 * 1024)).toFixed(2)} MB`;
+        ? `${(b / 1024).toFixed(2)} KB`
+        : `${(b / (1024 * 1024)).toFixed(2)} MB`;
 
   const handleDelete = async (id: string, name: string) => {
     if (
       !confirm(
-        `Delete "${name}"? This will permanently delete the document, embeddings, and file.`
+        `Delete "${name}"? This will permanently delete the document, embeddings, and file.`,
       )
     ) {
       return;

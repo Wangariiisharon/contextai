@@ -1,3 +1,4 @@
+import { createClient as createServerClient } from "@/utills/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
@@ -8,7 +9,6 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseStorage = createClient(url, serviceKey || anonKey);
-const supabase = createClient(url, anonKey);
 
 // Native Gemini SDK — supports outputDimensionality natively
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -37,7 +37,7 @@ async function extractTextFromFile(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const pdfParser = new (PDFParser as any)(null, true);
       pdfParser.on("pdfParser_dataError", (err: any) =>
-        reject(new Error(`PDF parsing error: ${err.parserError}`))
+        reject(new Error(`PDF parsing error: ${err.parserError}`)),
       );
       pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
         try {
@@ -46,9 +46,9 @@ async function extractTextFromFile(file: File): Promise<string> {
             page.Texts?.forEach((text: any) =>
               text.R?.forEach(
                 (r: any) =>
-                  r.T && (fullText += safeDecodeURIComponent(r.T) + " ")
-              )
-            )
+                  r.T && (fullText += safeDecodeURIComponent(r.T) + " "),
+              ),
+            ),
           );
           resolve(fullText.trim());
         } catch (error: any) {
@@ -64,13 +64,27 @@ async function extractTextFromFile(file: File): Promise<string> {
     return buffer.toString("utf-8");
   } else {
     throw new Error(
-      "Unsupported file type. Please upload PDF, DOCX, or TXT files."
+      "Unsupported file type. Please upload PDF, DOCX, or TXT files.",
     );
   }
 }
 
 export async function POST(req: Request) {
   try {
+    // Get authenticated user from session cookies
+    const serverSupabase = await createServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await serverSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized: User not authenticated" },
+        { status: 401 },
+      );
+    }
+
     const file = (await req.formData()).get("file") as File;
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -97,12 +111,12 @@ export async function POST(req: Request) {
             success: false,
             error: `Storage RLS error: ${msg}. Ensure SUPABASE_SERVICE_ROLE_KEY is set.`,
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
       return NextResponse.json(
         { success: false, error: `Failed to store file: ${msg}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -116,7 +130,7 @@ export async function POST(req: Request) {
     if (!text || text.trim().length === 0) {
       return NextResponse.json(
         { error: "Could not extract text from file" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -141,7 +155,7 @@ export async function POST(req: Request) {
       const embeddingVector = result.embedding.values;
 
       // Store chunk with embedding in database
-      const { error } = await supabase.from("documents").insert({
+      const { error } = await serverSupabase.from("documents").insert({
         content: chunk,
         metadata: {
           source: file.name,
@@ -154,6 +168,7 @@ export async function POST(req: Request) {
           total_chunks: chunks.length,
           file_path: filePath,
           file_url: urlData.publicUrl,
+          user_id: user.id,
         },
         embedding: JSON.stringify(embeddingVector),
         file_path: filePath,
@@ -163,7 +178,7 @@ export async function POST(req: Request) {
       if (error) {
         return NextResponse.json(
           { success: false, error: error.message },
-          { status: 500 }
+          { status: 500 },
         );
       }
     }
@@ -179,7 +194,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message || "Failed to process file" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

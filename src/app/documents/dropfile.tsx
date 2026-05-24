@@ -1,4 +1,3 @@
-// ...existing code...
 import { useEffect, useState } from "react";
 
 interface UploadModalProps {
@@ -52,7 +51,7 @@ export default function DropFile({ onUploadSuccess }: UploadModalProps) {
         setFile(null);
         // Clear the file input properly
         const fileInput = document.getElementById(
-          "file-input"
+          "file-input",
         ) as HTMLInputElement | null;
         if (fileInput) {
           fileInput.value = "";
