@@ -54,7 +54,7 @@ export default function Home() {
         setDocumentsCount(docs.length);
         const chunks = docs.reduce(
           (acc: number, d: any) => acc + (Number(d.total_chunks) || 0),
-          0
+          0,
         );
         setTotalChunks(chunks);
         const latest = docs.reduce((max: string | null, d: any) => {

@@ -114,4 +114,3 @@ export default function DropFile({ onUploadSuccess }: UploadModalProps) {
     </div>
   );
 }
-// ...existing code...
